@@ -1,0 +1,17 @@
+# Workspace version: 1.42.75
+databutton==0.38.34
+ipykernel==6.29.5
+fastapi==0.111.0
+python-multipart==0.0.9
+uvicorn[standard]==0.29.0
+
+openai
+beautifulsoup4
+requests
+firebase-admin==6.5.0
+stripe==8.7.0
+aiohttp
+apify-client
+bs4
+pillow
+numpy
