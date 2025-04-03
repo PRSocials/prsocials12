@@ -22,8 +22,8 @@ def create_app() -> FastAPI:
         CORSMiddleware,
         allow_origins=["https://prsocials21.onrender.com", "http://localhost:5173"],
         allow_credentials=True,
-        allow_methods=["*"],  # Allow all methods (GET, POST, etc.)
-        allow_headers=["*"],  # Allow all headers
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
 
     @app.get("/")
@@ -37,7 +37,7 @@ def create_app() -> FastAPI:
             logger.error("DATABUTTON_TOKEN not configured")
             raise HTTPException(status_code=500, detail="DATABUTTON_TOKEN not configured")
         headers = {"Authorization": f"Bearer {DATABUTTON_TOKEN}"}
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(follow_redirects=True) as client:  # Enable redirect following
             try:
                 logger.info("Fetching my-subscription from Databutton API")
                 response = await client.get(
@@ -49,7 +49,7 @@ def create_app() -> FastAPI:
                 return response.json()
             except httpx.HTTPStatusError as e:
                 logger.error(f"HTTP error from Databutton: {e.response.status_code} - {e.response.text}")
-                raise HTTPException(status_code=e.response.status_code, detail=str(e))
+                raise HTTPException(status_code=e.response.status_code, detail=e.response.text or str(e))
             except Exception as e:
                 logger.error(f"Unexpected error fetching my-subscription: {str(e)}")
                 raise HTTPException(status_code=500, detail=f"Proxy error: {str(e)}")
@@ -60,7 +60,7 @@ def create_app() -> FastAPI:
             logger.error("DATABUTTON_TOKEN not configured")
             raise HTTPException(status_code=500, detail="DATABUTTON_TOKEN not configured")
         headers = {"Authorization": f"Bearer {DATABUTTON_TOKEN}"}
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(follow_redirects=True) as client:  # Enable redirect following
             try:
                 logger.info("Fetching subscription-plans from Databutton API")
                 response = await client.get(
@@ -72,7 +72,7 @@ def create_app() -> FastAPI:
                 return response.json()
             except httpx.HTTPStatusError as e:
                 logger.error(f"HTTP error from Databutton: {e.response.status_code} - {e.response.text}")
-                raise HTTPException(status_code=e.response.status_code, detail=str(e))
+                raise HTTPException(status_code=e.response.status_code, detail=e.response.text or str(e))
             except Exception as e:
                 logger.error(f"Unexpected error fetching subscription-plans: {str(e)}")
                 raise HTTPException(status_code=500, detail=f"Proxy error: {str(e)}")
