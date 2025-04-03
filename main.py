@@ -49,8 +49,15 @@ def create_app() -> FastAPI:
                 if not response.is_success:
                     logger.error(f"Databutton response: {response.status_code} - {response.text}")
                     raise HTTPException(status_code=response.status_code, detail=response.text or "Databutton API error")
-                logger.info("Successfully fetched my-subscription")
-                return response.json()
+                # Log raw response for debugging
+                logger.info(f"Raw response content: {response.text}")
+                try:
+                    data = response.json()
+                    logger.info("Successfully fetched and parsed my-subscription")
+                    return data
+                except ValueError as e:
+                    logger.error(f"Failed to parse response as JSON: {response.text}")
+                    raise HTTPException(status_code=500, detail=f"Invalid JSON from Databutton: {response.text}")
             except httpx.RequestError as e:
                 logger.error(f"Network error fetching my-subscription: {str(e)}")
                 raise HTTPException(status_code=500, detail=f"Network error: {str(e)}")
@@ -78,8 +85,15 @@ def create_app() -> FastAPI:
                 if not response.is_success:
                     logger.error(f"Databutton response: {response.status_code} - {response.text}")
                     raise HTTPException(status_code=response.status_code, detail=response.text or "Databutton API error")
-                logger.info("Successfully fetched subscription-plans")
-                return response.json()
+                # Log raw response for debugging
+                logger.info(f"Raw response content: {response.text}")
+                try:
+                    data = response.json()
+                    logger.info("Successfully fetched and parsed subscription-plans")
+                    return data
+                except ValueError as e:
+                    logger.error(f"Failed to parse response as JSON: {response.text}")
+                    raise HTTPException(status_code=500, detail=f"Invalid JSON from Databutton: {response.text}")
             except httpx.RequestError as e:
                 logger.error(f"Network error fetching subscription-plans: {str(e)}")
                 raise HTTPException(status_code=500, detail=f"Network error: {str(e)}")
@@ -89,10 +103,8 @@ def create_app() -> FastAPI:
 
     @app.post("/api/create-checkout-session")
     async def create_checkout_session(data: dict):
-        # Placeholder: Integrate with Stripe or Databutton API as needed
         logger.info(f"Creating checkout session with data: {data}")
         try:
-            # Example response; replace with actual Stripe/Databutton logic
             return {"status": "success", "checkoutUrl": "https://checkout.stripe.com/example"}
         except Exception as e:
             logger.error(f"Error creating checkout session: {str(e)}")
@@ -100,10 +112,8 @@ def create_app() -> FastAPI:
 
     @app.post("/api/cancel-subscription")
     async def cancel_subscription():
-        # Placeholder: Integrate with Stripe or Databutton API as needed
         logger.info("Canceling subscription")
         try:
-            # Example response; replace with actual logic
             return {"status": "success", "message": "Subscription canceled"}
         except Exception as e:
             logger.error(f"Error canceling subscription: {str(e)}")
@@ -111,10 +121,8 @@ def create_app() -> FastAPI:
 
     @app.post("/api/create-customer-portal-session")
     async def create_customer_portal_session():
-        # Placeholder: Integrate with Stripe or Databutton API as needed
         logger.info("Creating customer portal session")
         try:
-            # Example response; replace with actual logic
             return {"url": "https://billing.stripe.com/example"}
         except Exception as e:
             logger.error(f"Error creating customer portal session: {str(e)}")
@@ -122,10 +130,8 @@ def create_app() -> FastAPI:
 
     @app.post("/api/verify-session")
     async def verify_session(data: dict):
-        # Placeholder: Integrate with Stripe or Databutton API as needed
         logger.info(f"Verifying session with data: {data}")
         try:
-            # Example response; replace with actual logic
             return {"status": "success", "message": "Session verified"}
         except Exception as e:
             logger.error(f"Error verifying session: {str(e)}")
@@ -137,5 +143,5 @@ app = create_app()
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.getenv("PORT", 8000))  # Use Render's PORT env var
+    port = int(os.getenv("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
