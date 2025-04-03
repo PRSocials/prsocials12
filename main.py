@@ -2,13 +2,14 @@ import os
 import pathlib
 import json
 import dotenv
-from fastapi import FastAPI, APIRouter, Depends
+from fastapi import FastAPI, APIRouter, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+import httpx
 
 # Load environment variables
 dotenv.load_dotenv()
 
-# Load additional environment variables for Stripe, OpenAI, Apify
+# Load additional environment variables for Stripe, OpenAI, Apify, and Databutton
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
 STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -97,6 +98,44 @@ def create_app() -> FastAPI:
     async def root():
         return {"message": "Welcome to the PRSocials Backend API"}
 
+    # Proxy endpoint for Databutton subscription
+    @app.get("/api/proxy/my-subscription")
+    async def proxy_my_subscription():
+        if not DATABUTTON_TOKEN:
+            raise HTTPException(status_code=500, detail="DATABUTTON_TOKEN not configured")
+        headers = {"Authorization": f"Bearer {DATABUTTON_TOKEN}"}
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.get(
+                    "https://api.databutton.com/routes/api/my-subscription",
+                    headers=headers
+                )
+                response.raise_for_status()  # Raise an exception for bad status codes
+                return response.json()
+            except httpx.HTTPStatusError as e:
+                raise HTTPException(status_code=e.response.status_code, detail=str(e))
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Proxy error: {str(e)}")
+
+    # Proxy endpoint for Databutton subscription plans
+    @app.get("/api/proxy/subscription-plans")
+    async def proxy_subscription_plans():
+        if not DATABUTTON_TOKEN:
+            raise HTTPException(status_code=500, detail="DATABUTTON_TOKEN not configured")
+        headers = {"Authorization": f"Bearer {DATABUTTON_TOKEN}"}
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.get(
+                    "https://api.databutton.com/routes/api/subscription-plans",
+                    headers=headers
+                )
+                response.raise_for_status()  # Raise an exception for bad status codes
+                return response.json()
+            except httpx.HTTPStatusError as e:
+                raise HTTPException(status_code=e.response.status_code, detail=str(e))
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Proxy error: {str(e)}")
+
     # Include API routers
     app.include_router(import_api_routers())
 
@@ -125,3 +164,9 @@ def create_app() -> FastAPI:
 
 # Create the app instance
 app = create_app()
+
+# Ensure the app binds to the correct host and port for Render
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.getenv("PORT", 8000))  # Render provides PORT env var
+    uvicorn.run(app, host="0.0.0.0", port=port)
