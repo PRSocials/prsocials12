@@ -11,13 +11,11 @@ logger = logging.getLogger(__name__)
 
 # Load environment variables
 dotenv.load_dotenv()
-
 DATABUTTON_TOKEN = os.getenv("DATABUTTON_TOKEN")
 
 def create_app() -> FastAPI:
     app = FastAPI()
 
-    # Add CORS middleware
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["https://prsocials21.onrender.com", "http://localhost:5173"],
@@ -31,51 +29,107 @@ def create_app() -> FastAPI:
         logger.info("Root endpoint accessed")
         return {"message": "Welcome to the PRSocials Backend API"}
 
-    @app.get("/api/proxy/my-subscription")
-    async def proxy_my_subscription():
+    @app.get("/api/my-subscription")
+    async def get_my_subscription():
         if not DATABUTTON_TOKEN:
             logger.error("DATABUTTON_TOKEN not configured")
             raise HTTPException(status_code=500, detail="DATABUTTON_TOKEN not configured")
         headers = {"Authorization": f"Bearer {DATABUTTON_TOKEN}"}
-        async with httpx.AsyncClient(follow_redirects=True) as client:  # Enable redirect following
+        async with httpx.AsyncClient(follow_redirects=True) as client:
             try:
                 logger.info("Fetching my-subscription from Databutton API")
                 response = await client.get(
                     "https://api.databutton.com/routes/api/my-subscription",
                     headers=headers
                 )
-                response.raise_for_status()
+                logger.info(f"Response status: {response.status_code}, URL: {response.url}")
+                if response.history:
+                    for r in response.history:
+                        logger.info(f"Redirected from {r.url} to {r.headers.get('Location')} with status {r.status_code}")
+                if not response.is_success:
+                    logger.error(f"Databutton response: {response.status_code} - {response.text}")
+                    raise HTTPException(status_code=response.status_code, detail=response.text or "Databutton API error")
                 logger.info("Successfully fetched my-subscription")
                 return response.json()
-            except httpx.HTTPStatusError as e:
-                logger.error(f"HTTP error from Databutton: {e.response.status_code} - {e.response.text}")
-                raise HTTPException(status_code=e.response.status_code, detail=e.response.text or str(e))
+            except httpx.RequestError as e:
+                logger.error(f"Network error fetching my-subscription: {str(e)}")
+                raise HTTPException(status_code=500, detail=f"Network error: {str(e)}")
             except Exception as e:
                 logger.error(f"Unexpected error fetching my-subscription: {str(e)}")
                 raise HTTPException(status_code=500, detail=f"Proxy error: {str(e)}")
 
-    @app.get("/api/proxy/subscription-plans")
-    async def proxy_subscription_plans():
+    @app.get("/api/subscription-plans")
+    async def get_subscription_plans():
         if not DATABUTTON_TOKEN:
             logger.error("DATABUTTON_TOKEN not configured")
             raise HTTPException(status_code=500, detail="DATABUTTON_TOKEN not configured")
         headers = {"Authorization": f"Bearer {DATABUTTON_TOKEN}"}
-        async with httpx.AsyncClient(follow_redirects=True) as client:  # Enable redirect following
+        async with httpx.AsyncClient(follow_redirects=True) as client:
             try:
                 logger.info("Fetching subscription-plans from Databutton API")
                 response = await client.get(
                     "https://api.databutton.com/routes/api/subscription-plans",
                     headers=headers
                 )
-                response.raise_for_status()
+                logger.info(f"Response status: {response.status_code}, URL: {response.url}")
+                if response.history:
+                    for r in response.history:
+                        logger.info(f"Redirected from {r.url} to {r.headers.get('Location')} with status {r.status_code}")
+                if not response.is_success:
+                    logger.error(f"Databutton response: {response.status_code} - {response.text}")
+                    raise HTTPException(status_code=response.status_code, detail=response.text or "Databutton API error")
                 logger.info("Successfully fetched subscription-plans")
                 return response.json()
-            except httpx.HTTPStatusError as e:
-                logger.error(f"HTTP error from Databutton: {e.response.status_code} - {e.response.text}")
-                raise HTTPException(status_code=e.response.status_code, detail=e.response.text or str(e))
+            except httpx.RequestError as e:
+                logger.error(f"Network error fetching subscription-plans: {str(e)}")
+                raise HTTPException(status_code=500, detail=f"Network error: {str(e)}")
             except Exception as e:
                 logger.error(f"Unexpected error fetching subscription-plans: {str(e)}")
                 raise HTTPException(status_code=500, detail=f"Proxy error: {str(e)}")
+
+    @app.post("/api/create-checkout-session")
+    async def create_checkout_session(data: dict):
+        # Placeholder: Integrate with Stripe or Databutton API as needed
+        logger.info(f"Creating checkout session with data: {data}")
+        try:
+            # Example response; replace with actual Stripe/Databutton logic
+            return {"status": "success", "checkoutUrl": "https://checkout.stripe.com/example"}
+        except Exception as e:
+            logger.error(f"Error creating checkout session: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Checkout error: {str(e)}")
+
+    @app.post("/api/cancel-subscription")
+    async def cancel_subscription():
+        # Placeholder: Integrate with Stripe or Databutton API as needed
+        logger.info("Canceling subscription")
+        try:
+            # Example response; replace with actual logic
+            return {"status": "success", "message": "Subscription canceled"}
+        except Exception as e:
+            logger.error(f"Error canceling subscription: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Cancel error: {str(e)}")
+
+    @app.post("/api/create-customer-portal-session")
+    async def create_customer_portal_session():
+        # Placeholder: Integrate with Stripe or Databutton API as needed
+        logger.info("Creating customer portal session")
+        try:
+            # Example response; replace with actual logic
+            return {"url": "https://billing.stripe.com/example"}
+        except Exception as e:
+            logger.error(f"Error creating customer portal session: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Portal error: {str(e)}")
+
+    @app.post("/api/verify-session")
+    async def verify_session(data: dict):
+        # Placeholder: Integrate with Stripe or Databutton API as needed
+        logger.info(f"Verifying session with data: {data}")
+        try:
+            # Example response; replace with actual logic
+            return {"status": "success", "message": "Session verified"}
+        except Exception as e:
+            logger.error(f"Error verifying session: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Verify error: {str(e)}")
 
     return app
 
@@ -83,5 +137,5 @@ app = create_app()
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.getenv("PORT", 8000))
+    port = int(os.getenv("PORT", 8000))  # Use Render's PORT env var
     uvicorn.run(app, host="0.0.0.0", port=port)
